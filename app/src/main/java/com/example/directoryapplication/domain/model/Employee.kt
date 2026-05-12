@@ -1,4 +1,10 @@
 package com.example.directoryapplication.domain.model
 
-class Employee {
-}
+data class Employee(
+    val id: Int,
+    val name: String,
+    val position: String,
+    val phone: String,
+    val email: String,
+    val department: String
+)
