@@ -1,6 +1,10 @@
 package com.example.directoryapplication
-import androidx.compose.ui.test.*
+
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTextInput
 import com.example.directoryapplication.presentation.auth.LoginScreen
 import com.example.directoryapplication.presentation.theme.DirectoryApplicationTheme
 import org.junit.Rule
@@ -19,7 +23,6 @@ class LoginScreenTest {
             }
         }
 
-        // Проверяем наличие полей
         composeTestRule.onNodeWithText("Email").assertIsDisplayed()
         composeTestRule.onNodeWithText("Пароль").assertIsDisplayed()
         composeTestRule.onNodeWithText("Войти").assertIsDisplayed()
@@ -49,8 +52,6 @@ class LoginScreenTest {
             .onNodeWithText("Email")
             .performTextInput("test@test.com")
 
-        composeTestRule
-            .onNodeWithText("test@test.com")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("test@test.com").assertIsDisplayed()
     }
 }
