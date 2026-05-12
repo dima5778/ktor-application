@@ -19,8 +19,16 @@ fun DirectoryScreen(
     onEmployeeClick: (Int) -> Unit,
     onAddClick: () -> Unit,
     onLogout: () -> Unit,
+    shouldRefresh: Boolean = false,
+    onRefreshHandled: () -> Unit = {},
     viewModel: DirectoryViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(shouldRefresh) {
+        if (shouldRefresh) {
+            viewModel.refresh()
+            onRefreshHandled()
+        }
+    }
     val uiState by viewModel.uiState.collectAsState()
     var deleteId by remember { mutableStateOf<Int?>(null) }
 
@@ -121,7 +129,6 @@ fun DirectoryScreen(
                         EmployeeCard(
                             employee = employee,
                             onClick = { onEmployeeClick(employee.id) },
-                            onDelete = { deleteId = employee.id }
                         )
                     }
                 }

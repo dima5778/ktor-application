@@ -26,15 +26,23 @@ fun AddEditEmployeeScreen(
         }
     }
 
+    // Когда сохранение прошло успешно — вызываем onBack (который уже содержит should_refresh)
     LaunchedEffect(uiState.isSaved) {
-        if (uiState.isSaved) onBack()
+        if (uiState.isSaved) {
+            onBack()
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (employeeId == null || employeeId == -1) "Добавить сотрудника" else "Редактировать")
+                    Text(
+                        if (employeeId == null || employeeId == -1)
+                            "Добавить сотрудника"
+                        else
+                            "Редактировать"
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

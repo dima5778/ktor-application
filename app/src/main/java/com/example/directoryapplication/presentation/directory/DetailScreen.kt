@@ -7,22 +7,58 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.example.directoryapplication.presentation.directory.components.InfoRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     employeeId: Int,
+    navController: NavController,           // ← нужен для обновления
     onBack: () -> Unit,
     onEdit: () -> Unit,
+    onDeleted: () -> Unit,                  // ← должен быть
     viewModel: DetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
+    // Загрузка сотрудника
     LaunchedEffect(employeeId) {
         viewModel.loadEmployee(employeeId)
+    }
+
+    // Автоматический возврат после удаления
+    LaunchedEffect(uiState.isDeleted) {
+        if (uiState.isDeleted) {
+            onDeleted()
+        }
+    }
+
+    // Диалог удаления
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Удалить сотрудника?") },
+            text = { Text("Это действие нельзя отменить.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteEmployee(employeeId)
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Удалить", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Отмена")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -35,14 +71,17 @@ fun DetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onEdit) {   // ← добавить
+                    IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, contentDescription = "Редактировать")
+                    }
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Удалить")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -56,24 +95,22 @@ fun DetailScreen(
                 uiState.isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-
                 uiState.error != null -> {
                     Text(
                         text = uiState.error ?: "",
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
-
                 uiState.employee != null -> {
                     val emp = uiState.employee!!
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Аватар большой
                         Surface(
                             modifier = Modifier.size(100.dp),
                             shape = MaterialTheme.shapes.extraLarge,
@@ -90,64 +127,23 @@ fun DetailScreen(
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(emp.name, style = MaterialTheme.typography.headlineSmall)
                         Text(
-                            text = emp.name,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        Text(
-                            text = emp.position,
+                            emp.position,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        // Информационные карточки
-                        InfoRow(icon = Icons.Default.Business, label = "Отдел", value = emp.department)
+                        InfoRow(Icons.Default.Business, "Отдел", emp.department)
                         Spacer(modifier = Modifier.height(12.dp))
-                        InfoRow(icon = Icons.Default.Phone, label = "Телефон", value = emp.phone)
+                        InfoRow(Icons.Default.Phone, "Телефон", emp.phone)
                         Spacer(modifier = Modifier.height(12.dp))
-                        InfoRow(icon = Icons.Default.Email, label = "Email", value = emp.email)
+                        InfoRow(Icons.Default.Email, "Email", emp.email)
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun InfoRow(
-    icon: ImageVector,
-    label: String,
-    value: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyLarge
-                )
             }
         }
     }

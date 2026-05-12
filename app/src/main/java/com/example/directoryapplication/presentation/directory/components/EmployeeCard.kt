@@ -18,7 +18,6 @@ import com.example.directoryapplication.domain.model.Employee
 fun EmployeeCard(
     employee: Employee,
     onClick: () -> Unit,
-    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -56,11 +55,6 @@ fun EmployeeCard(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(employee.phone, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            }
-
-            // Кнопка удаления
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = MaterialTheme.colorScheme.error)
             }
         }
     }

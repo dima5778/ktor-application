@@ -8,13 +8,15 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class DetailUiState(
     val employee: Employee? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isDeleted: Boolean = false   // ← новое поле
 )
 
 @HiltViewModel
@@ -34,6 +36,19 @@ class DetailViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     _uiState.value = DetailUiState(error = "Ошибка: ${error.message}")
+                }
+        }
+    }
+
+    fun deleteEmployee(id: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            repository.deleteEmployee(id)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, isDeleted = true) }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, error = "Ошибка удаления: ${error.message}") }
                 }
         }
     }

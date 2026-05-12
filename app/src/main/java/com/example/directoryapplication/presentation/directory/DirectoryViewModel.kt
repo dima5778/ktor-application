@@ -16,7 +16,8 @@ data class DirectoryUiState(
     val employees: List<Employee> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val isDeleted: Boolean = false
 )
 
 @OptIn(FlowPreview::class)
@@ -106,7 +107,14 @@ class DirectoryViewModel @Inject constructor(
                 }
         }
     }
-
+    fun refresh() {
+        val currentQuery = _uiState.value.searchQuery
+        if (currentQuery.isEmpty()) {
+            loadEmployees()
+        } else {
+            searchEmployees(currentQuery)
+        }
+    }
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
         searchQuery.value = query

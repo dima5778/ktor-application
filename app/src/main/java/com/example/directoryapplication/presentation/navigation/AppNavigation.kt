@@ -1,6 +1,7 @@
 package com.example.directoryapplication.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -43,7 +44,13 @@ fun AppNavigation() {
             )
         }
 
-        composable(Screen.Directory.route) {
+        composable(Screen.Directory.route) { backStackEntry ->
+            // Следим за результатом возврата с Add/Edit экранов
+            val addEditResult = backStackEntry
+                .savedStateHandle
+                .getStateFlow("should_refresh", false)
+                .collectAsState()
+
             DirectoryScreen(
                 onEmployeeClick = { navController.navigate(Screen.Detail.createRoute(it)) },
                 onAddClick = { navController.navigate(Screen.AddEmployee.route) },
@@ -52,26 +59,48 @@ fun AppNavigation() {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Directory.route) { inclusive = true }
                     }
+                },
+                shouldRefresh = addEditResult.value,
+                onRefreshHandled = {
+                    backStackEntry.savedStateHandle["should_refresh"] = false
                 }
             )
         }
 
+
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("employeeId") { type = NavType.IntType })
-        ) { backStack ->
-            val id = backStack.arguments?.getInt("employeeId") ?: return@composable
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("employeeId") ?: return@composable
+
             DetailScreen(
                 employeeId = id,
+                navController = navController,
                 onBack = { navController.popBackStack() },
-                onEdit = { navController.navigate(Screen.EditEmployee.createRoute(id)) }
+                onEdit = {
+                    navController.navigate(Screen.EditEmployee.createRoute(id))
+                },
+                onDeleted = {
+                    // Выставляем флаг для DirectoryScreen ПЕРЕД возвратом
+                    try {
+                        navController.getBackStackEntry(Screen.Directory.route)
+                            .savedStateHandle["should_refresh"] = true
+                    } catch (e: Exception) { }
+                    navController.popBackStack()
+                }
             )
         }
 
         composable(Screen.AddEmployee.route) {
             AddEditEmployeeScreen(
                 employeeId = null,
-                onBack = { navController.popBackStack() }
+                onBack = {
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("should_refresh", true)
+                    navController.popBackStack()
+                }
             )
         }
 
@@ -82,7 +111,18 @@ fun AppNavigation() {
             val id = backStack.arguments?.getInt("employeeId") ?: return@composable
             AddEditEmployeeScreen(
                 employeeId = id,
-                onBack = { navController.popBackStack() }
+                onBack = {
+                    // Обновляем DirectoryScreen (два уровня назад)
+                    navController.getBackStackEntry(Screen.Directory.route)
+                        .savedStateHandle["should_refresh"] = true
+
+                    // Обновляем DetailScreen (один уровень назад)
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("should_refresh", true)
+
+                    navController.popBackStack()
+                }
             )
         }
     }
