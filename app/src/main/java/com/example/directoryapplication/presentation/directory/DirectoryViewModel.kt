@@ -3,9 +3,9 @@ package com.example.directoryapplication.presentation.directory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.directoryapplication.domain.model.Employee
+import com.example.directoryapplication.domain.usecase.DeleteEmployeeUseCase
 import com.example.directoryapplication.domain.usecase.GetEmployeesUseCase
 import com.example.directoryapplication.domain.usecase.SearchEmployeesUseCase
-
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
@@ -23,7 +23,8 @@ data class DirectoryUiState(
 @HiltViewModel
 class DirectoryViewModel @Inject constructor(
     private val getEmployeesUseCase: GetEmployeesUseCase,
-    private val searchEmployeesUseCase: SearchEmployeesUseCase
+    private val searchEmployeesUseCase: SearchEmployeesUseCase,
+    private val deleteEmployeeUseCase: DeleteEmployeeUseCase   // ← Добавили
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DirectoryUiState())
@@ -51,6 +52,7 @@ class DirectoryViewModel @Inject constructor(
     private fun loadEmployees() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
+
             getEmployeesUseCase()
                 .onSuccess { employees ->
                     _uiState.update { it.copy(employees = employees, isLoading = false) }
@@ -69,6 +71,7 @@ class DirectoryViewModel @Inject constructor(
     private fun searchEmployees(query: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+
             searchEmployeesUseCase(query)
                 .onSuccess { employees ->
                     _uiState.update { it.copy(employees = employees, isLoading = false) }
@@ -78,6 +81,26 @@ class DirectoryViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             error = "Ошибка поиска: ${error.message}"
+                        )
+                    }
+                }
+        }
+    }
+
+    // Исправленная функция удаления
+    fun deleteEmployee(id: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            deleteEmployeeUseCase(id)
+                .onSuccess {
+                    loadEmployees() // перезагружаем список
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "Ошибка удаления: ${error.message}"
                         )
                     }
                 }

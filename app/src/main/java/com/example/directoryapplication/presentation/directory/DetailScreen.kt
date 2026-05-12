@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun DetailScreen(
     employeeId: Int,
     onBack: () -> Unit,
+    onEdit: () -> Unit,
     viewModel: DetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -31,6 +32,11 @@ fun DetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onEdit) {   // ← добавить
+                        Icon(Icons.Default.Edit, contentDescription = "Редактировать")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

@@ -17,8 +17,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    // ← ЗАМЕНИ на IP своего компьютера когда тестируешь на телефоне
-    // Для эмулятора: http://10.0.2.2:8080/
     private const val BASE_URL = "http://10.0.2.2:8080/"
 
     @Provides

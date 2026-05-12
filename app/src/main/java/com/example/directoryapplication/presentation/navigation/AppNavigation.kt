@@ -7,9 +7,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.directoryapplication.presentation.auth.LoginScreen
+import com.example.directoryapplication.presentation.directory.AddEditEmployeeScreen
 import com.example.directoryapplication.presentation.directory.DetailScreen
 import com.example.directoryapplication.presentation.directory.DirectoryScreen
-
 import com.google.firebase.auth.FirebaseAuth
 
 sealed class Screen(val route: String) {
@@ -17,6 +17,10 @@ sealed class Screen(val route: String) {
     object Directory : Screen("directory")
     object Detail : Screen("detail/{employeeId}") {
         fun createRoute(id: Int) = "detail/$id"
+    }
+    object AddEmployee : Screen("add_employee")
+    object EditEmployee : Screen("edit_employee/{employeeId}") {
+        fun createRoute(id: Int) = "edit_employee/$id"
     }
 }
 
@@ -41,9 +45,8 @@ fun AppNavigation() {
 
         composable(Screen.Directory.route) {
             DirectoryScreen(
-                onEmployeeClick = { employeeId ->
-                    navController.navigate(Screen.Detail.createRoute(employeeId))
-                },
+                onEmployeeClick = { navController.navigate(Screen.Detail.createRoute(it)) },
+                onAddClick = { navController.navigate(Screen.AddEmployee.route) },
                 onLogout = {
                     FirebaseAuth.getInstance().signOut()
                     navController.navigate(Screen.Login.route) {
@@ -56,9 +59,28 @@ fun AppNavigation() {
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("employeeId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getInt("employeeId") ?: return@composable
+        ) { backStack ->
+            val id = backStack.arguments?.getInt("employeeId") ?: return@composable
             DetailScreen(
+                employeeId = id,
+                onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(Screen.EditEmployee.createRoute(id)) }
+            )
+        }
+
+        composable(Screen.AddEmployee.route) {
+            AddEditEmployeeScreen(
+                employeeId = null,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.EditEmployee.route,
+            arguments = listOf(navArgument("employeeId") { type = NavType.IntType })
+        ) { backStack ->
+            val id = backStack.arguments?.getInt("employeeId") ?: return@composable
+            AddEditEmployeeScreen(
                 employeeId = id,
                 onBack = { navController.popBackStack() }
             )
