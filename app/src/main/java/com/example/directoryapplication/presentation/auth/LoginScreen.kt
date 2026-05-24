@@ -21,6 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
+    onRegisterClick: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -39,7 +40,6 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Заголовок
         Text(
             text = "📋",
             style = MaterialTheme.typography.displayLarge
@@ -59,14 +59,11 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Email
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
-            leadingIcon = {
-                Icon(Icons.Default.Email, contentDescription = null)
-            },
+            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
@@ -75,27 +72,20 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Пароль
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Пароль") },
-            leadingIcon = {
-                Icon(Icons.Default.Lock, contentDescription = null)
-            },
+            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
-                        if (passwordVisible) Icons.Default.VisibilityOff
-                        else Icons.Default.Visibility,
+                        if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                         contentDescription = "Toggle password"
                     )
                 }
             },
-            visualTransformation = if (passwordVisible)
-                VisualTransformation.None
-            else
-                PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
@@ -104,7 +94,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Кнопка
         Button(
             onClick = { viewModel.login(email, password) },
             modifier = Modifier
@@ -123,7 +112,6 @@ fun LoginScreen(
             }
         }
 
-        // Ошибка
         uiState.error?.let { error ->
             Spacer(modifier = Modifier.height(16.dp))
             Card(
@@ -139,6 +127,17 @@ fun LoginScreen(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Кнопка перехода на регистрацию
+        TextButton(onClick = onRegisterClick) {
+            Text(
+                text = "Нет аккаунта? Зарегистрироваться",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }

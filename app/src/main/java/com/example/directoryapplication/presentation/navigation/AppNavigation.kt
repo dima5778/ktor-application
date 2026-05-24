@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.directoryapplication.presentation.auth.LoginScreen
+import com.example.directoryapplication.presentation.auth.RegisterScreen
 import com.example.directoryapplication.presentation.directory.AddEditEmployeeScreen
 import com.example.directoryapplication.presentation.directory.DetailScreen
 import com.example.directoryapplication.presentation.directory.DirectoryScreen
@@ -15,6 +16,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
+    object Register : Screen("register")
     object Directory : Screen("directory")
     object Detail : Screen("detail/{employeeId}") {
         fun createRoute(id: Int) = "detail/$id"
@@ -40,12 +42,25 @@ fun AppNavigation() {
                     navController.navigate(Screen.Directory.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
+                },
+                onRegisterClick = {
+                    navController.navigate(Screen.Register.route)
                 }
             )
         }
 
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    navController.navigate(Screen.Directory.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
         composable(Screen.Directory.route) { backStackEntry ->
-            // Следим за результатом возврата с Add/Edit экранов
             val addEditResult = backStackEntry
                 .savedStateHandle
                 .getStateFlow("should_refresh", false)
@@ -67,7 +82,6 @@ fun AppNavigation() {
             )
         }
 
-
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("employeeId") { type = NavType.IntType })
@@ -82,7 +96,6 @@ fun AppNavigation() {
                     navController.navigate(Screen.EditEmployee.createRoute(id))
                 },
                 onDeleted = {
-                    // Выставляем флаг для DirectoryScreen ПЕРЕД возвратом
                     try {
                         navController.getBackStackEntry(Screen.Directory.route)
                             .savedStateHandle["should_refresh"] = true
@@ -112,15 +125,11 @@ fun AppNavigation() {
             AddEditEmployeeScreen(
                 employeeId = id,
                 onBack = {
-                    // Обновляем DirectoryScreen (два уровня назад)
                     navController.getBackStackEntry(Screen.Directory.route)
                         .savedStateHandle["should_refresh"] = true
-
-                    // Обновляем DetailScreen (один уровень назад)
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set("should_refresh", true)
-
                     navController.popBackStack()
                 }
             )
