@@ -20,6 +20,8 @@ import com.example.directoryapplication.presentation.directory.components.Employ
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DirectoryScreen(
+    isDarkTheme: Boolean = false,    // Новый параметр
+    onThemeToggle: () -> Unit = {},  // Новый параметр
     onEmployeeClick: (Int) -> Unit,
     onAddClick: () -> Unit,
     onLogout: () -> Unit,
@@ -61,6 +63,16 @@ fun DirectoryScreen(
             TopAppBar(
                 title = { Text("Справочник сотрудников") },
                 actions = {
+                    // Кнопка переключения темы
+                    IconButton(onClick = onThemeToggle) {
+                        // Меняем иконку в зависимости от текущей темы
+                        if (isDarkTheme) {
+                            Icon(Icons.Default.LightMode, contentDescription = "Включить светлую тему")
+                        } else {
+                            Icon(Icons.Default.DarkMode, contentDescription = "Включить темную тему")
+                        }
+                    }
+                    // Кнопка выхода
                     IconButton(onClick = onLogout) {
                         Icon(Icons.Default.Logout, contentDescription = "Выйти")
                     }
@@ -83,6 +95,7 @@ fun DirectoryScreen(
             )
         }
     ) { paddingValues ->
+        // ... (Весь остальной код внутри Scaffold остается без изменений) ...
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -166,7 +179,7 @@ fun DirectoryScreen(
                 else -> {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(bottom = 88.dp) // Чуть увеличил нижний отступ, чтобы кнопка не перекрывала текст
+                        contentPadding = PaddingValues(bottom = 88.dp)
                     ) {
                         items(uiState.employees, key = { it.id }) { employee ->
                             EmployeeCard(

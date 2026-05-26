@@ -28,7 +28,10 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    isDarkTheme: Boolean = false,
+    onThemeToggle: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
 
@@ -67,6 +70,8 @@ fun AppNavigation() {
                 .collectAsState()
 
             DirectoryScreen(
+                isDarkTheme = isDarkTheme,
+                onThemeToggle = onThemeToggle,
                 onEmployeeClick = { navController.navigate(Screen.Detail.createRoute(it)) },
                 onAddClick = { navController.navigate(Screen.AddEmployee.route) },
                 onLogout = {
@@ -82,6 +87,7 @@ fun AppNavigation() {
             )
         }
 
+        // ... (Detail, AddEmployee и EditEmployee оставляете как были у вас) ...
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("employeeId") { type = NavType.IntType })
