@@ -2,12 +2,12 @@ package com.example.directoryapplication.presentation.directory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.directoryapplication.data.local.SearchHistoryDataStore
 import com.example.directoryapplication.domain.model.Employee
 import com.example.directoryapplication.domain.usecase.DeleteEmployeeUseCase
 import com.example.directoryapplication.domain.usecase.GetEmployeesUseCase
 import com.example.directoryapplication.domain.usecase.SearchEmployeesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -20,34 +20,23 @@ data class DirectoryUiState(
     val isDeleted: Boolean = false
 )
 
-@OptIn(FlowPreview::class)
 @HiltViewModel
 class DirectoryViewModel @Inject constructor(
     private val getEmployeesUseCase: GetEmployeesUseCase,
     private val searchEmployeesUseCase: SearchEmployeesUseCase,
-    private val deleteEmployeeUseCase: DeleteEmployeeUseCase   // ← Добавили
+    private val deleteEmployeeUseCase: DeleteEmployeeUseCase,
+    private val searchHistoryDataStore: SearchHistoryDataStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DirectoryUiState())
     val uiState: StateFlow<DirectoryUiState> = _uiState.asStateFlow()
 
-    private val searchQuery = MutableStateFlow("")
+    private val searchQueryFlow = MutableStateFlow("")
+
+    val searchHistory: Flow<List<String>> = searchHistoryDataStore.searchHistory
 
     init {
         loadEmployees()
-
-        viewModelScope.launch {
-            searchQuery
-                .debounce(400)
-                .distinctUntilChanged()
-                .collect { query ->
-                    if (query.isEmpty()) {
-                        loadEmployees()
-                    } else {
-                        searchEmployees(query)
-                    }
-                }
-        }
     }
 
     private fun loadEmployees() {
@@ -60,63 +49,64 @@ class DirectoryViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "Ошибка загрузки: ${error.message}"
-                        )
+                        it.copy(isLoading = false, error = "Ошибка загрузки: ${error.message}")
                     }
                 }
         }
     }
 
-    private fun searchEmployees(query: String) {
+    fun performSearch(query: String) {
+        if (query.isBlank()) {
+            loadEmployees()
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
             searchEmployeesUseCase(query)
                 .onSuccess { employees ->
                     _uiState.update { it.copy(employees = employees, isLoading = false) }
+                    saveSearchQuery(query)
                 }
                 .onFailure { error ->
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "Ошибка поиска: ${error.message}"
-                        )
+                        it.copy(isLoading = false, error = "Ошибка поиска: ${error.message}")
                     }
                 }
         }
     }
 
-    // Исправленная функция удаления
+    private suspend fun saveSearchQuery(query: String) {
+        searchHistoryDataStore.addSearchQuery(query)
+    }
+
     fun deleteEmployee(id: Int) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
             deleteEmployeeUseCase(id)
-                .onSuccess {
-                    loadEmployees() // перезагружаем список
-                }
+                .onSuccess { loadEmployees() }
                 .onFailure { error ->
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "Ошибка удаления: ${error.message}"
-                        )
+                        it.copy(isLoading = false, error = "Ошибка удаления: ${error.message}")
                     }
                 }
         }
     }
+
     fun refresh() {
-        val currentQuery = _uiState.value.searchQuery
-        if (currentQuery.isEmpty()) {
-            loadEmployees()
-        } else {
-            searchEmployees(currentQuery)
-        }
+        performSearch(_uiState.value.searchQuery)
     }
+
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
-        searchQuery.value = query
+        searchQueryFlow.value = query
+    }
+
+    fun clearSearchHistory() {
+        viewModelScope.launch {
+            searchHistoryDataStore.clearHistory()
+        }
     }
 }

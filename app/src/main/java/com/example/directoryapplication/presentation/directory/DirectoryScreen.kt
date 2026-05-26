@@ -2,13 +2,17 @@ package com.example.directoryapplication.presentation.directory
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.directoryapplication.presentation.directory.components.EmployeeCard
@@ -29,10 +33,12 @@ fun DirectoryScreen(
             onRefreshHandled()
         }
     }
+
     val uiState by viewModel.uiState.collectAsState()
+    val searchHistory by viewModel.searchHistory.collectAsState(initial = emptyList())
+
     var deleteId by remember { mutableStateOf<Int?>(null) }
 
-    // Диалог подтверждения удаления
     deleteId?.let { id ->
         AlertDialog(
             onDismissRequest = { deleteId = null },
@@ -67,15 +73,8 @@ fun DirectoryScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddClick,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Добавить сотрудника",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
+            FloatingActionButton(onClick = onAddClick) {
+                Icon(Icons.Default.Add, contentDescription = "Добавить сотрудника")
             }
         }
     ) { paddingValues ->
@@ -87,6 +86,7 @@ fun DirectoryScreen(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
+            // === Строка поиска ===
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::onSearchQueryChange,
@@ -94,42 +94,81 @@ fun DirectoryScreen(
                 placeholder = { Text("Поиск по имени, должности...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        viewModel.performSearch(uiState.searchQuery)
+                    }
+                )
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            when {
-                uiState.isLoading -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
-
-                uiState.error != null -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+            // === История поиска + кнопка очистки ===
+            if (searchHistory.isNotEmpty() && uiState.searchQuery.isBlank()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(uiState.error ?: "", color = MaterialTheme.colorScheme.error)
-                        Spacer(Modifier.height(16.dp))
-                        Button(onClick = { viewModel.onSearchQueryChange("") }) { Text("Повторить") }
+                    Text(
+                        text = "Недавние запросы",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    TextButton(onClick = { viewModel.clearSearchHistory() }) {
+                        Text("Очистить", color = MaterialTheme.colorScheme.error)
                     }
                 }
 
-                uiState.employees.isEmpty() -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { Text("Сотрудники не найдены", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                Spacer(modifier = Modifier.height(8.dp))
 
-                else -> LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    items(uiState.employees, key = { it.id }) { employee ->
-                        EmployeeCard(
-                            employee = employee,
-                            onClick = { onEmployeeClick(employee.id) },
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(searchHistory) { query ->
+                        SuggestionChip(
+                            onClick = { viewModel.onSearchQueryChange(query) },
+                            label = { Text(query) }
                         )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // === Основной контент ===
+            when {
+                uiState.isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                uiState.error != null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(uiState.error ?: "", color = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.height(16.dp))
+                            Button(onClick = { viewModel.performSearch("") }) { Text("Повторить") }
+                        }
+                    }
+                }
+                uiState.employees.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Сотрудники не найдены", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp)
+                    ) {
+                        items(uiState.employees, key = { it.id }) { employee ->
+                            EmployeeCard(
+                                employee = employee,
+                                onClick = { onEmployeeClick(employee.id) }
+                            )
+                        }
                     }
                 }
             }
