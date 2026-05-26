@@ -73,9 +73,14 @@ fun DirectoryScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddClick) {
-                Icon(Icons.Default.Add, contentDescription = "Добавить сотрудника")
-            }
+            ExtendedFloatingActionButton(
+                onClick = onAddClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = MaterialTheme.shapes.large,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Добавить", style = MaterialTheme.typography.labelLarge) }
+            )
         }
     ) { paddingValues ->
         Column(
@@ -161,7 +166,7 @@ fun DirectoryScreen(
                 else -> {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(bottom = 80.dp)
+                        contentPadding = PaddingValues(bottom = 88.dp) // Чуть увеличил нижний отступ, чтобы кнопка не перекрывала текст
                     ) {
                         items(uiState.employees, key = { it.id }) { employee ->
                             EmployeeCard(
