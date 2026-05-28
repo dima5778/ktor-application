@@ -20,8 +20,8 @@ import com.example.directoryapplication.presentation.directory.components.Employ
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DirectoryScreen(
-    isDarkTheme: Boolean = false,    // Новый параметр
-    onThemeToggle: () -> Unit = {},  // Новый параметр
+    isDarkTheme: Boolean = false,
+    onThemeToggle: () -> Unit = {},
     onEmployeeClick: (Int) -> Unit,
     onAddClick: () -> Unit,
     onLogout: () -> Unit,
@@ -95,7 +95,6 @@ fun DirectoryScreen(
             )
         }
     ) { paddingValues ->
-        // ... (Весь остальной код внутри Scaffold остается без изменений) ...
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -111,6 +110,19 @@ fun DirectoryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Поиск по имени, должности...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (uiState.searchQuery.isNotEmpty()) {
+                        IconButton(onClick = {
+                            viewModel.onSearchQueryChange("")
+                        }) {
+                            Icon(
+                                Icons.Default.Clear,
+                                contentDescription = "Очистить",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
                 singleLine = true,
                 shape = MaterialTheme.shapes.large,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),

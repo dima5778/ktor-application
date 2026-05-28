@@ -86,8 +86,6 @@ fun AppNavigation(
                 }
             )
         }
-
-        // ... (Detail, AddEmployee и EditEmployee оставляете как были у вас) ...
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("employeeId") { type = NavType.IntType })

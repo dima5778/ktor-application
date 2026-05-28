@@ -41,7 +41,7 @@ class DirectoryViewModel @Inject constructor(
         loadEmployees()
         viewModelScope.launch {
             searchQueryFlow
-                .debounce(750)
+                .debounce(250)
                 .distinctUntilChanged()
                 .collect { query ->
                     performSearch(query)
